@@ -183,13 +183,50 @@ _html2canvas.Parse = function (images, options) {
         });
       }
 
-      textList.forEach(function(text, index) {
-        var bounds = getTextBounds(state, text, textDecoration, (index < textList.length - 1));
-        if (bounds) {
-          drawText(text, bounds.left, bounds.bottom, ctx);
-          renderTextDecoration(ctx, textDecoration, bounds, metrics, color);
-        }
-      });
+      if(el.nodeName == 'TEXTAREA') {
+					//Multiline rendering
+					var lineData = {
+						lines: 			  [],
+						currentLine: 	[],
+						offsetTop: 		0,
+						height:       +(window.getComputedStyle(el).getPropertyValue('line-height')||'').replace('px','')
+					};
+					textList.forEach(function(text,index){
+						if(text != "\n") lineData.currentLine.push(text);
+
+						if(text == "\n" || (index==textList.length-1)) {
+							lineData.lines.push(lineData.currentLine);
+							lineData.currentLine = [];
+						}
+					});
+					lineData.lines.forEach(function(line){
+						state.textOffset = 0;
+						var text   = state.node.nodeValue = line.join('');
+						var bounds = getTextBounds(state, text, textDecoration, true);
+
+						if (bounds) {
+							bounds = {
+								top: 	  bounds.top + lineData.offsetTop,
+								bottom: bounds.bottom + lineData.offsetTop,
+								height: bounds.height,
+								left: 	bounds.left,
+								right: 	bounds.right,
+								width: 	bounds.width
+							};
+							drawText(text, bounds.left, bounds.bottom, ctx);
+							renderTextDecoration(ctx, textDecoration, bounds, metrics, color);
+						}
+						lineData.offsetTop += lineData.height;
+					});
+				} else {
+					textList.forEach(function(text, index) {
+						var bounds = getTextBounds(state, text, textDecoration, (index < textList.length - 1));
+						if (bounds) {
+							drawText(text, bounds.left, bounds.bottom, ctx);
+							renderTextDecoration(ctx, textDecoration, bounds, metrics, color);
+						}
+					});
+				}
     }
   }
 
